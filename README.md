@@ -1,6 +1,8 @@
-# 遗书项目（Next.js 全栈）
+# 遗书项目
 
-这是一个基于 **Next.js App Router** 的全栈项目，前后端都使用 Next.js 实现。
+“我真的想离开这个世界，真的，但是在离开之前，我还是想要做点什么。”
+
+在这个项目完善之前，我还不会自杀
 
 ## 创作背景
 
@@ -106,10 +108,6 @@ npm run dev
 
 ## 如何修改后端遗书内容
 
-编辑文件：
-
-- `src/lib/will-config.ts`
-
-在 `WILL_CONTENT_BY_RELATION` 中修改不同关系对应的文案即可。
+访问http://localhost:3000/admin 进行配置
 
 ---
