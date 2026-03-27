@@ -8,6 +8,8 @@ export type AiAdminSettings =
 		baseUrl: string;
 		model: string;
 		deceasedName: string;
+		deceasedGender: string;
+		deceasedLifeDates: string;
 		styleKeywords: string;
 		systemTemplate: string;
 	};
@@ -35,6 +37,10 @@ const DEFAULT_AI_ADMIN_SETTINGS: AiAdminSettings =
 			"gpt-4o-mini",
 		deceasedName:
 			"{{DECEASED_NAME}}",
+		deceasedGender:
+			"",
+		deceasedLifeDates:
+			"",
 		styleKeywords:
 			"温柔、克制、真诚",
 		systemTemplate:
@@ -74,6 +80,8 @@ type AiSettingsRow =
 		base_url: string;
 		model: string;
 		deceased_name: string;
+		deceased_gender: string;
+		deceased_life_dates: string;
 		style_keywords: string;
 		system_template: string;
 		user_template: string;
@@ -116,11 +124,60 @@ CREATE TABLE IF NOT EXISTS ai_settings (
 	base_url TEXT NOT NULL,
 	model TEXT NOT NULL,
 	deceased_name TEXT NOT NULL,
+	deceased_gender TEXT NOT NULL,
+	deceased_life_dates TEXT NOT NULL,
 	style_keywords TEXT NOT NULL,
 	system_template TEXT NOT NULL,
 	user_template TEXT NOT NULL
 );
 `);
+
+function ensureAiSettingsColumns() {
+	const tableInfo =
+		db
+			.prepare(
+				"PRAGMA table_info(ai_settings)",
+			)
+			.all() as Array<{
+			name: string;
+		}>;
+
+	const hasDeceasedGender =
+		tableInfo.some(
+			(
+				column,
+			) =>
+				column.name ===
+				"deceased_gender",
+		);
+
+	if (
+		!hasDeceasedGender
+	) {
+		db.exec(
+			"ALTER TABLE ai_settings ADD COLUMN deceased_gender TEXT NOT NULL DEFAULT ''",
+		);
+	}
+
+	const hasDeceasedLifeDates =
+		tableInfo.some(
+			(
+				column,
+			) =>
+				column.name ===
+				"deceased_life_dates",
+		);
+
+	if (
+		!hasDeceasedLifeDates
+	) {
+		db.exec(
+			"ALTER TABLE ai_settings ADD COLUMN deceased_life_dates TEXT NOT NULL DEFAULT ''",
+		);
+	}
+}
+
+ensureAiSettingsColumns();
 
 function sanitize(
 	value: unknown,
@@ -167,6 +224,16 @@ function toRowPayload(
 				input.deceasedName,
 				base.deceasedName,
 			),
+		deceasedGender:
+			sanitize(
+				input.deceasedGender,
+				base.deceasedGender,
+			),
+		deceasedLifeDates:
+			sanitize(
+				input.deceasedLifeDates,
+				base.deceasedLifeDates,
+			),
 		styleKeywords:
 			sanitize(
 				input.styleKeywords,
@@ -192,6 +259,10 @@ function rowToSettings(
 			row.model,
 		deceasedName:
 			row.deceased_name,
+		deceasedGender:
+			row.deceased_gender,
+		deceasedLifeDates:
+			row.deceased_life_dates,
 		styleKeywords:
 			row.style_keywords,
 		systemTemplate:
@@ -220,9 +291,9 @@ function seedAiSettingsIfNeeded() {
 	db.prepare(
 		`
 		INSERT INTO ai_settings (
-			id, api_key, base_url, model, deceased_name, style_keywords, system_template, user_template
+			id, api_key, base_url, model, deceased_name, deceased_gender, deceased_life_dates, style_keywords, system_template, user_template
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 	).run(
 		1,
@@ -230,6 +301,8 @@ function seedAiSettingsIfNeeded() {
 		DEFAULT_AI_ADMIN_SETTINGS.baseUrl,
 		DEFAULT_AI_ADMIN_SETTINGS.model,
 		DEFAULT_AI_ADMIN_SETTINGS.deceasedName,
+		DEFAULT_AI_ADMIN_SETTINGS.deceasedGender,
+		DEFAULT_AI_ADMIN_SETTINGS.deceasedLifeDates,
 		DEFAULT_AI_ADMIN_SETTINGS.styleKeywords,
 		DEFAULT_AI_ADMIN_SETTINGS.systemTemplate,
 		LEGACY_USER_TEMPLATE,
@@ -243,7 +316,7 @@ export function getAiAdminSettings(): AiAdminSettings {
 		db
 			.prepare(
 				`
-				SELECT id, api_key, base_url, model, deceased_name, style_keywords, system_template, user_template
+				SELECT id, api_key, base_url, model, deceased_name, deceased_gender, deceased_life_dates, style_keywords, system_template, user_template
 				FROM ai_settings
 				WHERE id = 1
 				`,
@@ -279,14 +352,16 @@ export function updateAiAdminSettings(
 	db.prepare(
 		`
 		INSERT INTO ai_settings (
-			id, api_key, base_url, model, deceased_name, style_keywords, system_template, user_template
+			id, api_key, base_url, model, deceased_name, deceased_gender, deceased_life_dates, style_keywords, system_template, user_template
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(id) DO UPDATE SET
 			api_key = excluded.api_key,
 			base_url = excluded.base_url,
 			model = excluded.model,
 			deceased_name = excluded.deceased_name,
+			deceased_gender = excluded.deceased_gender,
+			deceased_life_dates = excluded.deceased_life_dates,
 			style_keywords = excluded.style_keywords,
 			system_template = excluded.system_template,
 			user_template = excluded.user_template
@@ -297,6 +372,8 @@ export function updateAiAdminSettings(
 		next.baseUrl,
 		next.model,
 		next.deceasedName,
+		next.deceasedGender,
+		next.deceasedLifeDates,
 		next.styleKeywords,
 		next.systemTemplate,
 		LEGACY_USER_TEMPLATE,

@@ -5,6 +5,7 @@ import {
 	listRelations,
 } from "@/lib/will-store";
 import { getWillStyleSettings } from "@/lib/will-style-store";
+import { getAiAdminSettings } from "@/lib/ai-settings-store";
 
 export async function GET(
 	request: Request,
@@ -80,6 +81,8 @@ export async function GET(
 
 	const willStyle =
 		getWillStyleSettings();
+	const aiSettings =
+		getAiAdminSettings();
 
 	return NextResponse.json(
 		{
@@ -89,6 +92,8 @@ export async function GET(
 			content,
 			fontFile:
 				willStyle.fontFile,
+			deceasedName:
+				aiSettings.deceasedName,
 		},
 	);
 }

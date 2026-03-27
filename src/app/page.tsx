@@ -20,6 +20,7 @@ type WillApiResponse =
 		relations: string[];
 		content: WillContent;
 		fontFile: string;
+		deceasedName: string;
 	};
 
 type ApiErrorResponse =
@@ -87,6 +88,13 @@ export default function Home() {
 	] =
 		useState<WillApiResponse | null>(
 			null,
+		);
+	const [
+		deceasedName,
+		setDeceasedName,
+	] =
+		useState(
+			"TA",
 		);
 	const [
 		willFontFile,
@@ -211,12 +219,19 @@ export default function Home() {
 						payload.fontFile ??
 							"",
 					);
+					setDeceasedName(
+						payload.deceasedName?.trim() ||
+							"TA",
+					);
 				} catch (error) {
 					setWillData(
 						null,
 					);
 					setWillFontFile(
 						"",
+					);
+					setDeceasedName(
+						"TA",
 					);
 					setWillError(
 						error instanceof
@@ -310,7 +325,7 @@ export default function Home() {
 					[
 						{
 							role: "assistant",
-							content: `你好，${userName}。我是以逝者口吻与你对话的 AI。你可以和我聊聊想说的话。`,
+							content: `你好，${userName}。我是${deceasedName}，别伤心了，我们来聊聊吧`,
 						},
 					],
 				);

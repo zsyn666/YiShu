@@ -37,6 +37,8 @@ type AiConfigState =
 		baseUrl: string;
 		model: string;
 		deceasedName: string;
+		deceasedGender: string;
+		deceasedLifeDates: string;
 		styleKeywords: string;
 		systemTemplate: string;
 	};
@@ -124,6 +126,10 @@ function getDefaultAiConfig(): AiConfigState {
 			"gpt-4o-mini",
 		deceasedName:
 			"{{DECEASED_NAME}}",
+		deceasedGender:
+			"",
+		deceasedLifeDates:
+			"",
 		styleKeywords:
 			"温柔、克制、真诚",
 		systemTemplate:
@@ -136,6 +142,128 @@ function getDefaultWillStyle(): WillStyleState {
 		fontFile:
 			"",
 	};
+}
+
+function normalizeDateForInput(
+	value: string,
+): string {
+	const trimmed =
+		value.trim();
+
+	if (
+		!trimmed
+	) {
+		return "";
+	}
+
+	return trimmed
+		.replaceAll(
+			".",
+			"-",
+		)
+		.replaceAll(
+			"/",
+			"-",
+		);
+}
+
+function splitLifeDates(
+	value: string,
+): [
+	string,
+	string,
+] {
+	const delimiter =
+		" - ";
+	if (
+		!value.includes(
+			delimiter,
+		)
+	) {
+		return [
+			normalizeDateForInput(
+				value,
+			),
+			"",
+		];
+	}
+
+	const [
+		birthRaw,
+		deathRaw,
+	] =
+		value.split(
+			delimiter,
+			2,
+		);
+
+	return [
+		normalizeDateForInput(
+			birthRaw ??
+				"",
+		),
+		normalizeDateForInput(
+			deathRaw ??
+				"",
+		),
+	];
+}
+
+type DateParts =
+	{
+		year: string;
+		month: string;
+		day: string;
+	};
+
+function getDateParts(
+	value: string,
+): DateParts {
+	const normalized =
+		normalizeDateForInput(
+			value,
+		);
+
+	if (
+		!normalized
+	) {
+		return {
+			year: "",
+			month:
+				"",
+			day: "",
+		};
+	}
+
+	const [
+		year = "",
+		month = "",
+		day = "",
+	] =
+		normalized.split(
+			"-",
+			3,
+		);
+
+	return {
+		year,
+		month,
+		day,
+	};
+}
+
+function toDateString(
+	parts: DateParts,
+): string {
+	if (
+		!parts.year ||
+		!parts.month ||
+		!parts.day
+	) {
+		return "";
+	}
+
+	return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 export default function AdminPage() {
@@ -318,6 +446,102 @@ export default function AdminPage() {
 	] =
 		useState(
 			"",
+		);
+
+	const [
+		birthDate,
+		deathDate,
+	] =
+		splitLifeDates(
+			aiConfig.deceasedLifeDates,
+		);
+
+	const [
+		birthDateDraft,
+		setBirthDateDraft,
+	] =
+		useState<DateParts>(
+			getDateParts(
+				birthDate,
+			),
+		);
+	const [
+		deathDateDraft,
+		setDeathDateDraft,
+	] =
+		useState<DateParts>(
+			getDateParts(
+				deathDate,
+			),
+		);
+
+	useEffect(() => {
+		setBirthDateDraft(
+			getDateParts(
+				birthDate,
+			),
+		);
+		setDeathDateDraft(
+			getDateParts(
+				deathDate,
+			),
+		);
+	}, [
+		birthDate,
+		deathDate,
+	]);
+
+	const currentYear =
+		new Date().getFullYear();
+	const yearOptions =
+		Array.from(
+			{
+				length:
+					currentYear -
+					1899,
+			},
+			(
+				_,
+				index,
+			) =>
+				String(
+					currentYear -
+						index,
+				),
+		);
+	const monthOptions =
+		Array.from(
+			{
+				length: 12,
+			},
+			(
+				_,
+				index,
+			) =>
+				String(
+					index +
+						1,
+				).padStart(
+					2,
+					"0",
+				),
+		);
+	const dayOptions =
+		Array.from(
+			{
+				length: 31,
+			},
+			(
+				_,
+				index,
+			) =>
+				String(
+					index +
+						1,
+				).padStart(
+					2,
+					"0",
+				),
 		);
 
 	useEffect(() => {
@@ -529,6 +753,79 @@ export default function AdminPage() {
 					[key]:
 						value,
 				}),
+			);
+		};
+
+	const persistLifeDates =
+		(
+			nextBirth: DateParts,
+			nextDeath: DateParts,
+		) => {
+			const nextBirthValue =
+				toDateString(
+					nextBirth,
+				);
+			const nextDeathValue =
+				toDateString(
+					nextDeath,
+				);
+			const nextValue =
+				[
+					nextBirthValue,
+					nextDeathValue,
+				]
+					.filter(
+						Boolean,
+					)
+					.join(
+						" - ",
+					);
+
+			updateAiField(
+				"deceasedLifeDates",
+				nextValue,
+			);
+		};
+
+	const handleBirthDatePartChange =
+		(
+			key: keyof DateParts,
+			value: string,
+		) => {
+			const nextBirth =
+				{
+					...birthDateDraft,
+					[key]:
+						value,
+				};
+
+			setBirthDateDraft(
+				nextBirth,
+			);
+			persistLifeDates(
+				nextBirth,
+				deathDateDraft,
+			);
+		};
+
+	const handleDeathDatePartChange =
+		(
+			key: keyof DateParts,
+			value: string,
+		) => {
+			const nextDeath =
+				{
+					...deathDateDraft,
+					[key]:
+						value,
+				};
+
+			setDeathDateDraft(
+				nextDeath,
+			);
+			persistLifeDates(
+				birthDateDraft,
+				nextDeath,
 			);
 		};
 
@@ -1936,6 +2233,265 @@ export default function AdminPage() {
 										}
 										className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
 									/>
+								</div>
+
+								<div className="space-y-2">
+									<label className="text-sm font-medium text-zinc-700">
+										逝者性别
+									</label>
+									<input
+										value={
+											aiConfig.deceasedGender
+										}
+										onChange={(
+											e,
+										) =>
+											updateAiField(
+												"deceasedGender",
+												e
+													.target
+													.value,
+											)
+										}
+										placeholder="如：男 / 女"
+										className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none transition focus:border-zinc-500"
+									/>
+								</div>
+
+								<div className="space-y-3 sm:col-span-2">
+									<label className="text-sm font-medium text-zinc-700">
+										生卒日期（选择）
+									</label>
+
+									<div className="grid gap-3 sm:grid-cols-2">
+										<div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+											<p className="mb-2 text-xs font-medium text-zinc-600">
+												出生日期
+											</p>
+											<div className="grid grid-cols-3 gap-2">
+												<select
+													value={
+														birthDateDraft.year
+													}
+													onChange={(
+														e,
+													) =>
+														handleBirthDatePartChange(
+															"year",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														年
+													</option>
+													{yearOptions.map(
+														(
+															year,
+														) => (
+															<option
+																key={`birth-year-${year}`}
+																value={
+																	year
+																}>
+																{
+																	year
+																}
+															</option>
+														),
+													)}
+												</select>
+
+												<select
+													value={
+														birthDateDraft.month
+													}
+													onChange={(
+														e,
+													) =>
+														handleBirthDatePartChange(
+															"month",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														月
+													</option>
+													{monthOptions.map(
+														(
+															month,
+														) => (
+															<option
+																key={`birth-month-${month}`}
+																value={
+																	month
+																}>
+																{
+																	month
+																}
+															</option>
+														),
+													)}
+												</select>
+
+												<select
+													value={
+														birthDateDraft.day
+													}
+													onChange={(
+														e,
+													) =>
+														handleBirthDatePartChange(
+															"day",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														日
+													</option>
+													{dayOptions.map(
+														(
+															day,
+														) => (
+															<option
+																key={`birth-day-${day}`}
+																value={
+																	day
+																}>
+																{
+																	day
+																}
+															</option>
+														),
+													)}
+												</select>
+											</div>
+										</div>
+
+										<div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+											<p className="mb-2 text-xs font-medium text-zinc-600">
+												离世日期
+											</p>
+											<div className="grid grid-cols-3 gap-2">
+												<select
+													value={
+														deathDateDraft.year
+													}
+													onChange={(
+														e,
+													) =>
+														handleDeathDatePartChange(
+															"year",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														年
+													</option>
+													{yearOptions.map(
+														(
+															year,
+														) => (
+															<option
+																key={`death-year-${year}`}
+																value={
+																	year
+																}>
+																{
+																	year
+																}
+															</option>
+														),
+													)}
+												</select>
+
+												<select
+													value={
+														deathDateDraft.month
+													}
+													onChange={(
+														e,
+													) =>
+														handleDeathDatePartChange(
+															"month",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														月
+													</option>
+													{monthOptions.map(
+														(
+															month,
+														) => (
+															<option
+																key={`death-month-${month}`}
+																value={
+																	month
+																}>
+																{
+																	month
+																}
+															</option>
+														),
+													)}
+												</select>
+
+												<select
+													value={
+														deathDateDraft.day
+													}
+													onChange={(
+														e,
+													) =>
+														handleDeathDatePartChange(
+															"day",
+															e
+																.target
+																.value,
+														)
+													}
+													className="rounded-lg border border-zinc-300 bg-white px-2 py-2 text-sm outline-none transition focus:border-zinc-500">
+													<option value="">
+														日
+													</option>
+													{dayOptions.map(
+														(
+															day,
+														) => (
+															<option
+																key={`death-day-${day}`}
+																value={
+																	day
+																}>
+																{
+																	day
+																}
+															</option>
+														),
+													)}
+												</select>
+											</div>
+										</div>
+									</div>
+
+									<p className="text-xs text-zinc-500">
+										下拉选择年月日后会自动保存为统一格式。
+									</p>
 								</div>
 
 								<div className="space-y-2">
