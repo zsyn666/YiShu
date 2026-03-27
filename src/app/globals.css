@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	--background: #ffffff;
+	--foreground: #171717;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+	--color-background: var(
+		--background
+	);
+	--color-foreground: var(
+		--foreground
+	);
+	--font-sans: var(
+		--font-geist-sans
+	);
+	--font-mono: var(
+		--font-geist-mono
+	);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
+	}
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+	background: var(
+		--background
+	);
+	color: var(
+		--foreground
+	);
+	font-family:
+		Arial,
+		Helvetica,
+		sans-serif;
+}
+
+.will-paper {
+	background-color: #fffdf7;
+	background-image:
+		radial-gradient(
+			circle
+				at
+				100%
+				0,
+			rgba(
+				209,
+				174,
+				99,
+				0.12
+			),
+			transparent
+				36%
+		),
+		linear-gradient(
+			to
+				bottom,
+			rgba(
+				180,
+				142,
+				72,
+				0.08
+			),
+			rgba(
+				180,
+				142,
+				72,
+				0.02
+			)
+		),
+		repeating-linear-gradient(
+			to
+				bottom,
+			rgba(
+					146,
+					112,
+					44,
+					0.07
+				)
+				0,
+			rgba(
+					146,
+					112,
+					44,
+					0.07
+				)
+				1px,
+			transparent
+				1px,
+			transparent
+				2.1em
+		);
+	box-shadow:
+		0
+			14px
+			30px
+			rgba(
+				70,
+				51,
+				18,
+				0.12
+			),
+		inset
+			0
+			0
+			0
+			1px
+			rgba(
+				161,
+				127,
+				64,
+				0.18
+			);
+}
+
+.will-fade-in {
+	animation: will-fade-in
+		0.9s
+		ease-out
+		both;
+}
+
+@keyframes will-fade-in {
+	0% {
+		opacity: 0;
+		transform: translateY(
+				16px
+			)
+			scale(
+				0.99
+			);
+		filter: blur(
+			0.6px
+		);
+	}
+
+	100% {
+		opacity: 1;
+		transform: translateY(
+				0
+			)
+			scale(
+				1
+			);
+		filter: blur(
+			0
+		);
+	}
 }

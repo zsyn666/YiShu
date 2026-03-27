@@ -19,6 +19,7 @@ type WillApiResponse =
 		relation: string;
 		relations: string[];
 		content: WillContent;
+		fontFile: string;
 	};
 
 type ApiErrorResponse =
@@ -86,6 +87,13 @@ export default function Home() {
 	] =
 		useState<WillApiResponse | null>(
 			null,
+		);
+	const [
+		willFontFile,
+		setWillFontFile,
+	] =
+		useState(
+			"",
 		);
 	const [
 		loadingWill,
@@ -199,9 +207,16 @@ export default function Home() {
 					setWillData(
 						payload,
 					);
+					setWillFontFile(
+						payload.fontFile ??
+							"",
+					);
 				} catch (error) {
 					setWillData(
 						null,
+					);
+					setWillFontFile(
+						"",
 					);
 					setWillError(
 						error instanceof
@@ -220,6 +235,19 @@ export default function Home() {
 	}, [
 		relation,
 	]);
+
+	const willFontUrl =
+		useMemo(
+			() =>
+				willFontFile
+					? `/fonts/${encodeURIComponent(
+							willFontFile,
+						)}`
+					: "",
+			[
+				willFontFile,
+			],
+		);
 
 	const stepLabel =
 		useMemo(() => {
@@ -403,6 +431,17 @@ export default function Home() {
 
 	return (
 		<div className="min-h-screen bg-zinc-100 py-10 px-4 text-zinc-900">
+			{willFontUrl && (
+				<style
+					jsx
+					global>{`
+					@font-face {
+						font-family: "WillConfiguredFont";
+						src: url("${willFontUrl}");
+						font-display: swap;
+					}
+				`}</style>
+			)}
 			<main className="mx-auto flex w-full max-w-3xl flex-col gap-6 rounded-2xl bg-white p-6 shadow-sm sm:p-8">
 				<header className="space-y-2">
 					<h1 className="text-2xl font-bold sm:text-3xl">
@@ -545,22 +584,30 @@ export default function Home() {
 						)}
 
 						{willData && (
-							<article className="space-y-3 rounded-lg bg-zinc-50 p-4">
-								<h3 className="text-xl font-semibold">
+							<article
+								key={`${willData.relation}-${willData.content.title}`}
+								className="will-paper will-fade-in space-y-4 rounded-lg p-6 sm:p-8"
+								style={{
+									fontFamily:
+										willFontUrl
+											? `"WillConfiguredFont", "KaiTi", "STKaiti", serif`
+											: `"KaiTi", "STKaiti", "Songti SC", serif`,
+								}}>
+								<h3 className="text-2xl font-semibold tracking-wide text-amber-950">
 									{
 										willData
 											.content
 											.title
 									}
 								</h3>
-								<p className="font-medium">
+								<p className="font-medium text-amber-900">
 									{
 										willData
 											.content
 											.greeting
 									}
 								</p>
-								<div className="space-y-2 text-zinc-700">
+								<div className="space-y-3 leading-8 text-amber-950/90">
 									{willData.content.body.map(
 										(
 											paragraph,
@@ -575,7 +622,7 @@ export default function Home() {
 										),
 									)}
 								</div>
-								<p className="pt-2 font-medium text-zinc-800">
+								<p className="pt-4 font-medium text-amber-900">
 									——{" "}
 									{
 										willData

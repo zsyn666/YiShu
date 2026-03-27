@@ -4,6 +4,7 @@ import {
 	hasRelation,
 	listRelations,
 } from "@/lib/will-store";
+import { getWillStyleSettings } from "@/lib/will-style-store";
 
 export async function GET(
 	request: Request,
@@ -77,12 +78,17 @@ export async function GET(
 		);
 	}
 
+	const willStyle =
+		getWillStyleSettings();
+
 	return NextResponse.json(
 		{
 			relation:
 				relationParam,
 			relations,
 			content,
+			fontFile:
+				willStyle.fontFile,
 		},
 	);
 }

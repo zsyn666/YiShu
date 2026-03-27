@@ -59,6 +59,18 @@ type AiConfigApiResponse =
 		data?: AiConfigState;
 	};
 
+type WillStyleState =
+	{
+		fontFile: string;
+	};
+
+type WillStyleApiResponse =
+	{
+		message: string;
+		data?: WillStyleState;
+		fonts?: string[];
+	};
+
 type TemplateInterviewMessage =
 	{
 		role:
@@ -119,6 +131,13 @@ function getDefaultAiConfig(): AiConfigState {
 	};
 }
 
+function getDefaultWillStyle(): WillStyleState {
+	return {
+		fontFile:
+			"",
+	};
+}
+
 export default function AdminPage() {
 	const [
 		relations,
@@ -175,6 +194,30 @@ export default function AdminPage() {
 	const [
 		savingAi,
 		setSavingAi,
+	] =
+		useState(
+			false,
+		);
+
+	const [
+		willStyle,
+		setWillStyle,
+	] =
+		useState<WillStyleState>(
+			getDefaultWillStyle(),
+		);
+	const [
+		fontOptions,
+		setFontOptions,
+	] =
+		useState<
+			string[]
+		>(
+			[],
+		);
+	const [
+		savingWillStyle,
+		setSavingWillStyle,
 	] =
 		useState(
 			false,
@@ -294,6 +337,7 @@ export default function AdminPage() {
 					const [
 						willsRes,
 						aiRes,
+						willStyleRes,
 					] =
 						await Promise.all(
 							[
@@ -302,6 +346,9 @@ export default function AdminPage() {
 								),
 								fetch(
 									"/api/admin/ai-config",
+								),
+								fetch(
+									"/api/admin/will-style",
 								),
 							],
 						);
@@ -378,6 +425,31 @@ export default function AdminPage() {
 							aiData.data,
 						);
 					}
+
+					const willStyleData =
+						(await willStyleRes.json()) as WillStyleApiResponse;
+
+					if (
+						!willStyleRes.ok
+					) {
+						throw new Error(
+							willStyleData.message ||
+								"加载遗书样式配置失败",
+						);
+					}
+
+					if (
+						willStyleData.data
+					) {
+						setWillStyle(
+							willStyleData.data,
+						);
+					}
+
+					setFontOptions(
+						willStyleData.fonts ??
+							[],
+					);
 				} catch (e) {
 					setError(
 						e instanceof
@@ -677,6 +749,78 @@ export default function AdminPage() {
 				);
 			} finally {
 				setSavingAi(
+					false,
+				);
+			}
+		};
+
+	const handleSaveWillStyle =
+		async () => {
+			setSavingWillStyle(
+				true,
+			);
+			setError(
+				"",
+			);
+			setMessage(
+				"",
+			);
+
+			try {
+				const res =
+					await fetch(
+						"/api/admin/will-style",
+						{
+							method:
+								"PUT",
+							headers:
+								{
+									"Content-Type":
+										"application/json",
+								},
+							body: JSON.stringify(
+								willStyle,
+							),
+						},
+					);
+
+				const data =
+					(await res.json()) as WillStyleApiResponse;
+
+				if (
+					!res.ok
+				) {
+					throw new Error(
+						data.message ||
+							"遗书样式保存失败",
+					);
+				}
+
+				if (
+					data.data
+				) {
+					setWillStyle(
+						data.data,
+					);
+				}
+
+				setFontOptions(
+					data.fonts ??
+						[],
+				);
+
+				setMessage(
+					"遗书样式配置已保存",
+				);
+			} catch (e) {
+				setError(
+					e instanceof
+						Error
+						? e.message
+						: "未知错误",
+				);
+			} finally {
+				setSavingWillStyle(
 					false,
 				);
 			}
@@ -1617,6 +1761,79 @@ export default function AdminPage() {
 								{saving
 									? "保存中..."
 									: "保存内容"}
+							</button>
+						</section>
+
+						<section className="space-y-4 rounded-xl border border-zinc-200 p-4">
+							<h2 className="text-base font-semibold">
+								遗书显示样式
+							</h2>
+
+							<div className="space-y-2">
+								<label className="text-sm font-medium text-zinc-700">
+									遗书字体（读取
+									public/fonts）
+								</label>
+								<select
+									value={
+										willStyle.fontFile
+									}
+									onChange={(
+										e,
+									) =>
+										setWillStyle(
+											(
+												prev,
+											) => ({
+												...prev,
+												fontFile:
+													e
+														.target
+														.value,
+											}),
+										)
+									}
+									className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-zinc-500">
+									<option value="">
+										默认字体（系统衬线）
+									</option>
+									{fontOptions.map(
+										(
+											fontName,
+										) => (
+											<option
+												key={
+													fontName
+												}
+												value={
+													fontName
+												}>
+												{
+													fontName
+												}
+											</option>
+										),
+									)}
+								</select>
+								<p className="text-xs text-zinc-500">
+									当前仅展示
+									ttf/otf/woff/woff2
+									文件。
+								</p>
+							</div>
+
+							<button
+								type="button"
+								onClick={
+									handleSaveWillStyle
+								}
+								disabled={
+									savingWillStyle
+								}
+								className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-400">
+								{savingWillStyle
+									? "保存中..."
+									: "保存遗书样式"}
 							</button>
 						</section>
 
